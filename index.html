@@ -1,0 +1,1847 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="System ERP do zarządzania magazynem zrębki - ResInvest Commodities Pyskowice">
+    <meta name="author" content="ResInvest Commodities">
+    <title>ResInvest ERP - System Magazynowy Pyskowice</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+            color: #1a202c;
+        }
+        
+        .main-header {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .nav-tabs {
+            background: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-bottom: 3px solid #667eea;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .nav-tab {
+            padding: 1rem 2rem;
+            font-weight: 600;
+            color: #4a5568;
+            background: transparent;
+            border: none;
+            border-bottom: 4px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            white-space: nowrap;
+        }
+        
+        .nav-tab:hover {
+            color: #667eea;
+            background: #f7fafc;
+        }
+        
+        .nav-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: #f7fafc;
+        }
+        
+        .content-section {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+        
+        .content-section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            color: white;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-card.green { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .stat-card.red { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        .stat-card.blue { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+        .stat-card.purple { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-align: center;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
+        .btn-info { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        
+        .modal.active { display: flex; }
+        
+        .modal-content {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            max-width: 900px;
+            width: 100%;
+            max-height: 95vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            animation: slideUp 0.4s ease;
+            margin: auto;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 0.75rem;
+            overflow-x: auto;
+            display: block;
+        }
+        
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+        
+        tbody {
+            display: table;
+            width: 100%;
+        }
+        
+        tbody tr:hover {
+            background: #f7fafc;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        
+        .tab-elektrownie {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .tab-elektrownie button {
+            flex: 1;
+            min-width: 150px;
+            padding: 1rem;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .tab-elektrownie button:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+        
+        .tab-elektrownie button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .doc-preview {
+            font-family: Arial, sans-serif;
+            background: white;
+            padding: 1rem;
+            max-width: 21cm;
+            margin: 0 auto;
+        }
+        
+        @media print {
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+        }
+        
+        /* TABLET */
+        @media (max-width: 1024px) {
+            .glass-card { padding: 1.5rem; }
+            .stat-card { padding: 1.25rem; }
+            table { font-size: 0.9rem; }
+            th, td { padding: 0.65rem; }
+        }
+        
+        /* MOBILE */
+        @media (max-width: 768px) {
+            .main-header { padding: 1rem !important; }
+            .main-header h1 { font-size: 1.5rem !important; }
+            .main-header p { font-size: 0.85rem; }
+            
+            .nav-tabs { 
+                padding: 0;
+                white-space: nowrap;
+            }
+            
+            .nav-tab { 
+                padding: 0.75rem 1rem; 
+                font-size: 0.85rem;
+                display: inline-block;
+            }
+            
+            .glass-card { 
+                padding: 1rem;
+                border-radius: 0.75rem;
+            }
+            
+            .stat-card { 
+                padding: 1rem;
+                text-align: center;
+            }
+            
+            .stat-card .text-4xl,
+            .stat-card .text-5xl { 
+                font-size: 2rem !important;
+            }
+            
+            .stat-card .text-3xl { 
+                font-size: 1.5rem !important;
+            }
+            
+            .btn { 
+                padding: 0.65rem 1rem;
+                font-size: 0.9rem;
+            }
+            
+            .modal-content {
+                padding: 1rem;
+                max-height: 90vh;
+            }
+            
+            .form-control {
+                padding: 0.65rem;
+                font-size: 0.95rem;
+            }
+            
+            table {
+                font-size: 0.85rem;
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            th, td {
+                padding: 0.5rem;
+                font-size: 0.85rem;
+            }
+            
+            .tab-elektrownie {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            
+            .tab-elektrownie button {
+                width: 100%;
+                min-width: auto;
+            }
+            
+            .doc-preview {
+                padding: 0.5rem;
+                font-size: 0.85rem;
+            }
+            
+            .grid { gap: 0.75rem !important; }
+            
+            h2 { font-size: 1.25rem !important; }
+            h3 { font-size: 1.1rem !important; }
+        }
+        
+        /* BARDZO MAŁE EKRANY */
+        @media (max-width: 480px) {
+            .main-header h1 { font-size: 1.25rem !important; }
+            .nav-tab { 
+                padding: 0.6rem 0.75rem; 
+                font-size: 0.75rem;
+            }
+            .stat-card .text-3xl { font-size: 1.25rem !important; }
+            .stat-card .text-4xl { font-size: 1.5rem !important; }
+            .btn { 
+                padding: 0.6rem 0.85rem;
+                font-size: 0.85rem;
+            }
+            h2 { font-size: 1.1rem !important; }
+            .modal-content h2 { font-size: 1.15rem !important; }
+        }
+        
+        /* SCROLLBAR STYLING */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #5568d3;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- EKRAN LOGOWANIA -->
+    <div id="login-screen" class="fixed inset-0 bg-gradient-to-br from-purple-600 via-blue-600 to-green-600 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4">
+            <div class="text-center mb-8">
+                <div class="text-6xl mb-4">📦</div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">ResInvest ERP</h1>
+                <p class="text-gray-600">System Magazynowy Pyskowice</p>
+            </div>
+            
+            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Login</label>
+                    <input type="text" id="login-username" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none" placeholder="Wprowadź login" required autocomplete="username">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Hasło</label>
+                    <input type="password" id="login-password" class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none" placeholder="Wprowadź hasło" required autocomplete="current-password">
+                </div>
+                
+                <div id="login-error" class="hidden text-red-600 text-sm text-center bg-red-50 p-3 rounded-lg">
+                    ❌ Nieprawidłowy login lub hasło!
+                </div>
+                
+                <button type="submit" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition">
+                    🔐 Zaloguj się
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center text-xs text-gray-500">
+                ResInvest Commodities © 2026
+            </div>
+        </div>
+    </div>
+
+    <!-- GŁÓWNA APLIKACJA (ukryta do zalogowania) -->
+    <div id="main-app" class="hidden">
+
+    <!-- NAGŁÓWEK -->
+    <header class="main-header text-white p-4 md:p-6 no-print">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold mb-1">ResInvest ERP System</h1>
+                <p class="text-xs md:text-sm text-gray-300">Magazyn Zrębki - Pyskowice | ul. Wiejska 26a</p>
+            </div>
+            <div class="text-left md:text-right">
+                <div class="text-xs md:text-sm text-gray-300">Zalogowany jako:</div>
+                <div class="font-bold text-base md:text-lg">Administrator</div>
+                <div class="text-xs text-gray-400" id="current-time"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- NAWIGACJA -->
+    <nav class="nav-tabs no-print sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex">
+            <button class="nav-tab active" onclick="showSection('dashboard')" data-section="dashboard">
+                📊 Panel Główny
+            </button>
+            <button class="nav-tab" onclick="showSection('documents')" data-section="documents">
+                📄 Dokumenty
+            </button>
+            <button class="nav-tab" onclick="showSection('warehouse')" data-section="warehouse">
+                📦 Magazyn
+            </button>
+            <button class="nav-tab" onclick="showSection('powerplants')" data-section="powerplants">
+                ⚡ Elektrownie
+            </button>
+            <button class="nav-tab" onclick="showSection('vehicles')" data-section="vehicles">
+                🚛 Pojazdy
+            </button>
+            <button class="nav-tab" onclick="showSection('reports')" data-section="reports">
+                📈 Raporty
+            </button>
+            <button class="nav-tab" onclick="showSection('users')" data-section="users">
+                👥 Użytkownicy
+            </button>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto p-3 md:p-6">
+
+        <!-- SEKCJA: PANEL GŁÓWNY -->
+        <section id="section-dashboard" class="content-section active space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                <div class="stat-card blue">
+                    <div class="text-3xl md:text-4xl mb-2 md:mb-3">📦</div>
+                    <div class="text-xs md:text-sm opacity-90 mb-1">Stan Magazynu</div>
+                    <div class="text-2xl md:text-3xl font-bold" id="dash-stock">0.00 mp</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="text-3xl md:text-4xl mb-2 md:mb-3">📥</div>
+                    <div class="text-xs md:text-sm opacity-90 mb-1">PZ (miesiąc)</div>
+                    <div class="text-2xl md:text-3xl font-bold" id="dash-pz">0.00 mp</div>
+                </div>
+                <div class="stat-card red">
+                    <div class="text-3xl md:text-4xl mb-2 md:mb-3">📤</div>
+                    <div class="text-xs md:text-sm opacity-90 mb-1">WZ (miesiąc)</div>
+                    <div class="text-2xl md:text-3xl font-bold" id="dash-wz">0.00 mp</div>
+                </div>
+                <div class="stat-card purple">
+                    <div class="text-3xl md:text-4xl mb-2 md:mb-3">📋</div>
+                    <div class="text-xs md:text-sm opacity-90 mb-1">Dokumenty</div>
+                    <div class="text-2xl md:text-3xl font-bold" id="dash-docs">0</div>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h2 class="text-xl md:text-2xl font-bold mb-4 md:mb-6">⚡ Szybkie Akcje</h2>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                    <button onclick="newDocument('PZ')" class="btn btn-success flex-col py-6 md:py-8">
+                        <span class="text-3xl md:text-5xl mb-1 md:mb-2">📥</span>
+                        <span class="text-sm md:text-lg">Nowe PZ</span>
+                    </button>
+                    <button onclick="newDocument('WZ')" class="btn btn-danger flex-col py-6 md:py-8">
+                        <span class="text-3xl md:text-5xl mb-1 md:mb-2">📤</span>
+                        <span class="text-sm md:text-lg">Nowe WZ</span>
+                    </button>
+                    <button onclick="showSection('warehouse')" class="btn btn-info flex-col py-6 md:py-8">
+                        <span class="text-3xl md:text-5xl mb-1 md:mb-2">📊</span>
+                        <span class="text-sm md:text-lg">Stan Magazynu</span>
+                    </button>
+                    <button onclick="generateReport()" class="btn btn-primary flex-col py-6 md:py-8">
+                        <span class="text-3xl md:text-5xl mb-1 md:mb-2">📈</span>
+                        <span class="text-sm md:text-lg">Generuj Raport</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h2 class="text-xl md:text-2xl font-bold mb-4 md:mb-6">📋 Ostatnie Dokumenty</h2>
+                <div id="recent-documents"></div>
+            </div>
+        </section>
+
+        <!-- SEKCJA: DOKUMENTY -->
+        <section id="section-documents" class="content-section">
+            <div class="glass-card">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <h2 class="text-xl md:text-2xl font-bold">📄 Lista Dokumentów</h2>
+                    <div class="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto">
+                        <button onclick="newDocument('PZ')" class="btn btn-success flex-1 md:flex-initial text-sm md:text-base">
+                            📥 Dodaj PZ
+                        </button>
+                        <button onclick="newDocument('WZ')" class="btn btn-danger flex-1 md:flex-initial text-sm md:text-base">
+                            📤 Dodaj WZ
+                        </button>
+                        <button onclick="generateReport()" class="btn btn-primary w-full md:w-auto text-sm md:text-base">
+                            📊 Generuj Raport
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filtry -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+                    <div>
+                        <label class="block text-xs md:text-sm font-semibold mb-2">Typ dokumentu</label>
+                        <select id="filter-type" class="form-control text-sm md:text-base" onchange="filterDocuments()">
+                            <option value="">Wszystkie</option>
+                            <option value="PZ">PZ - Przyjęcie</option>
+                            <option value="WZ">WZ - Wydanie</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs md:text-sm font-semibold mb-2">Data od</label>
+                        <input type="date" id="filter-date-from" class="form-control text-sm md:text-base" onchange="filterDocuments()">
+                    </div>
+                    <div>
+                        <label class="block text-xs md:text-sm font-semibold mb-2">Data do</label>
+                        <input type="date" id="filter-date-to" class="form-control text-sm md:text-base" onchange="filterDocuments()">
+                    </div>
+                    <div>
+                        <label class="block text-xs md:text-sm font-semibold mb-2">Szukaj</label>
+                        <input type="text" id="filter-search" class="form-control text-sm md:text-base" placeholder="Numer, kontrahent..." oninput="filterDocuments()">
+                    </div>
+                </div>
+
+                <div id="documents-table" class="overflow-x-auto"></div>
+            </div>
+        </section>
+
+        <!-- SEKCJA: MAGAZYN -->
+        <section id="section-warehouse" class="content-section">
+            <div class="glass-card">
+                <h2 class="text-xl md:text-2xl font-bold mb-4 md:mb-6">📦 Stan Magazynu Pyskowice</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+                    <div class="p-4 md:p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border-2 border-blue-300">
+                        <div class="text-xs md:text-sm text-blue-700 font-bold mb-2">AKTUALNY STAN ZRĘBKI</div>
+                        <div class="text-3xl md:text-5xl font-bold text-blue-600" id="warehouse-current">0.00 mp</div>
+                    </div>
+                    <div class="p-4 md:p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border-2 border-green-300">
+                        <div class="text-xs md:text-sm text-green-700 font-bold mb-2">SUMA PRZYJĘĆ (PZ)</div>
+                        <div class="text-3xl md:text-5xl font-bold text-green-600" id="warehouse-pz">0.00 mp</div>
+                    </div>
+                    <div class="p-4 md:p-6 bg-gradient-to-br from-red-50 to-red-100 rounded-xl border-2 border-red-300">
+                        <div class="text-xs md:text-sm text-red-700 font-bold mb-2">SUMA WYDAŃ (WZ)</div>
+                        <div class="text-3xl md:text-5xl font-bold text-red-600" id="warehouse-wz">0.00 mp</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEKCJA: ELEKTROWNIE -->
+        <section id="section-powerplants" class="content-section">
+            <div class="glass-card">
+                <h2 class="text-2xl font-bold mb-6">⚡ Wydania do Elektrociepłowni</h2>
+                
+                <div class="tab-elektrownie">
+                    <button class="active" onclick="showPowerplant('trutnov')" data-plant="trutnov">
+                        🏭 Elektrownia Trutnov
+                    </button>
+                    <button onclick="showPowerplant('czestochowa')" data-plant="czestochowa">
+                        🏭 Fortum Częstochowa
+                    </button>
+                    <button onclick="showPowerplant('chorzow')" data-plant="chorzow">
+                        🏭 EC Chorzów
+                    </button>
+                </div>
+
+                <!-- Trutnov -->
+                <div id="plant-trutnov" class="plant-content active">
+                    <div class="p-4 md:p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border-2 border-green-300 mb-4 md:mb-6">
+                        <h3 class="text-lg md:text-xl font-bold mb-3 md:mb-4">🏭 Elektrownia Trutnov (Czechy)</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                            <div>
+                                <div class="text-xs md:text-sm text-gray-600">Łącznie wydano (WZ)</div>
+                                <div class="text-2xl md:text-3xl font-bold text-green-600" id="trutnov-total">0.00 mp</div>
+                            </div>
+                            <div>
+                                <div class="text-xs md:text-sm text-gray-600">Ilość dokumentów WZ</div>
+                                <div class="text-2xl md:text-3xl font-bold text-blue-600" id="trutnov-count">0</div>
+                            </div>
+                            <div>
+                                <div class="text-xs md:text-sm text-gray-600">W tym miesiącu</div>
+                                <div class="text-2xl md:text-3xl font-bold text-purple-600" id="trutnov-month">0.00 mp</div>
+                            </div>
+                        </div>
+                    </div>
+                    <h4 class="font-bold mb-3 text-sm md:text-base">📋 Historia Wydań</h4>
+                    <div id="trutnov-list" class="overflow-x-auto"></div>
+                </div>
+
+                <!-- Częstochowa -->
+                <div id="plant-czestochowa" class="plant-content hidden">
+                    <div class="p-4 md:p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border-2 border-green-300 mb-4 md:mb-6">
+                        <h3 class="text-lg md:text-xl font-bold mb-3 md:mb-4">🏭 Fortum Częstochowa (Polska)</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                            <div>
+                                <div class="text-xs md:text-sm text-gray-600">Łącznie wydano (WZ)</div>
+                                <div class="text-2xl md:text-3xl font-bold text-green-600" id="czestochowa-total">0.00 mp</div>
+                            </div>
+                            <div>
+                                <div class="text-xs md:text-sm text-gray-600">Ilość dokumentów WZ</div>
+                                <div class="text-2xl md:text-3xl font-bold text-blue-600" id="czestochowa-count">0</div>
+                            </div>
+                            <div>
+                                <div class="text-xs md:text-sm text-gray-600">W tym miesiącu</div>
+                                <div class="text-2xl md:text-3xl font-bold text-purple-600" id="czestochowa-month">0.00 mp</div>
+                            </div>
+                        </div>
+                    </div>
+                    <h4 class="font-bold mb-3 text-sm md:text-base">📋 Historia Wydań</h4>
+                    <div id="czestochowa-list" class="overflow-x-auto"></div>
+                </div>
+
+                <!-- Chorzów -->
+                <div id="plant-chorzow" class="plant-content hidden">
+                    <div class="p-4 md:p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border-2 border-green-300 mb-4 md:mb-6">
+                        <h3 class="text-lg md:text-xl font-bold mb-3 md:mb-4">🏭 Elektrociepłownia Chorzów (Polska)</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                            <div>
+                                <div class="text-xs md:text-sm text-gray-600">Łącznie wydano (WZ)</div>
+                                <div class="text-2xl md:text-3xl font-bold text-green-600" id="chorzow-total">0.00 mp</div>
+                            </div>
+                            <div>
+                                <div class="text-xs md:text-sm text-gray-600">Ilość dokumentów WZ</div>
+                                <div class="text-2xl md:text-3xl font-bold text-blue-600" id="chorzow-count">0</div>
+                            </div>
+                            <div>
+                                <div class="text-xs md:text-sm text-gray-600">W tym miesiącu</div>
+                                <div class="text-2xl md:text-3xl font-bold text-purple-600" id="chorzow-month">0.00 mp</div>
+                            </div>
+                        </div>
+                    </div>
+                    <h4 class="font-bold mb-3 text-sm md:text-base">📋 Historia Wydań</h4>
+                    <div id="chorzow-list" class="overflow-x-auto"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEKCJA: POJAZDY -->
+        <section id="section-vehicles" class="content-section">
+            <div class="glass-card">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <h2 class="text-xl md:text-2xl font-bold">🚛 Zarządzanie Pojazdami</h2>
+                    <button onclick="addVehicle()" class="btn btn-success w-full md:w-auto text-sm md:text-base">
+                        ➕ Dodaj Pojazd
+                    </button>
+                </div>
+                <div id="vehicles-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4"></div>
+            </div>
+        </section>
+
+        <!-- SEKCJA: UŻYTKOWNICY -->
+        <section id="section-users" class="content-section">
+            <div class="glass-card">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <h2 class="text-xl md:text-2xl font-bold">👥 Zarządzanie Użytkownikami</h2>
+                    <button onclick="addUser()" class="btn btn-success w-full md:w-auto text-sm md:text-base">
+                        ➕ Dodaj Użytkownika
+                    </button>
+                </div>
+                <div id="users-list" class="overflow-x-auto"></div>
+            </div>
+        </section>
+
+        <!-- SEKCJA: RAPORTY -->
+        <section id="section-reports" class="content-section">
+            <div class="glass-card">
+                <h2 class="text-xl md:text-2xl font-bold mb-4 md:mb-6">📈 Generowanie Raportów</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <div class="p-4 md:p-6 bg-white rounded-xl border-2 border-green-300 hover:border-green-500 cursor-pointer transition" onclick="generateMonthlyReport()">
+                        <div class="text-4xl md:text-5xl mb-3">📊</div>
+                        <h3 class="text-lg md:text-xl font-bold mb-2">Raport Miesięczny</h3>
+                        <p class="text-sm md:text-base text-gray-600 mb-4">Wszystkie operacje PZ i WZ za bieżący miesiąc z bilansem</p>
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="event.stopPropagation(); generateMonthlyReport()" class="px-3 py-1 bg-green-600 text-white rounded-full text-xs md:text-sm hover:bg-green-700">📊 Excel</button>
+                            <button onclick="event.stopPropagation(); generateMonthlyReportPDF()" class="px-3 py-1 bg-red-600 text-white rounded-full text-xs md:text-sm hover:bg-red-700">📄 PDF</button>
+                            <button onclick="event.stopPropagation(); printMonthlyReport()" class="px-3 py-1 bg-blue-600 text-white rounded-full text-xs md:text-sm hover:bg-blue-700">🖨️ Drukuj</button>
+                        </div>
+                    </div>
+                    <div class="p-4 md:p-6 bg-white rounded-xl border-2 border-blue-300 hover:border-blue-500 cursor-pointer transition" onclick="generatePowerplantsReport()">
+                        <div class="text-4xl md:text-5xl mb-3">⚡</div>
+                        <h3 class="text-lg md:text-xl font-bold mb-2">Raport Elektrociepłowni</h3>
+                        <p class="text-sm md:text-base text-gray-600 mb-4">Zestawienie wydań WZ dla każdej elektrowni</p>
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="event.stopPropagation(); generatePowerplantsReport()" class="px-3 py-1 bg-green-600 text-white rounded-full text-xs md:text-sm hover:bg-green-700">📊 Excel</button>
+                            <button onclick="event.stopPropagation(); generatePowerplantsReportPDF()" class="px-3 py-1 bg-red-600 text-white rounded-full text-xs md:text-sm hover:bg-red-700">📄 PDF</button>
+                        </div>
+                    </div>
+                    <div class="p-4 md:p-6 bg-white rounded-xl border-2 border-purple-300 hover:border-purple-500 cursor-pointer transition" onclick="generateWarehouseReport()">
+                        <div class="text-4xl md:text-5xl mb-3">📦</div>
+                        <h3 class="text-lg md:text-xl font-bold mb-2">Raport Stanu Magazynu</h3>
+                        <p class="text-sm md:text-base text-gray-600 mb-4">Aktualny stan zrębki z historią zmian</p>
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="event.stopPropagation(); generateWarehouseReport()" class="px-3 py-1 bg-green-600 text-white rounded-full text-xs md:text-sm hover:bg-green-700">📊 Excel</button>
+                            <button onclick="event.stopPropagation(); generateWarehouseReportPDF()" class="px-3 py-1 bg-red-600 text-white rounded-full text-xs md:text-sm hover:bg-red-700">📄 PDF</button>
+                        </div>
+                    </div>
+                    <div class="p-4 md:p-6 bg-white rounded-xl border-2 border-orange-300 hover:border-orange-500 cursor-pointer transition" onclick="generateVehiclesReport()">
+                        <div class="text-4xl md:text-5xl mb-3">🚛</div>
+                        <h3 class="text-lg md:text-xl font-bold mb-2">Raport Pojazdów</h3>
+                        <p class="text-sm md:text-base text-gray-600 mb-4">Statystyki wykorzystania floty transportowej</p>
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="event.stopPropagation(); generateVehiclesReport()" class="px-3 py-1 bg-green-600 text-white rounded-full text-xs md:text-sm hover:bg-green-700">📊 Excel</button>
+                            <button onclick="event.stopPropagation(); generateVehiclesReportPDF()" class="px-3 py-1 bg-red-600 text-white rounded-full text-xs md:text-sm hover:bg-red-700">📄 PDF</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- MODAL: FORMULARZ DOKUMENTU -->
+    <div id="modal-document" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold" id="modal-title"></h2>
+                <button onclick="closeModal('modal-document')" class="text-4xl text-gray-500 hover:text-gray-700 leading-none">&times;</button>
+            </div>
+            <form id="form-document" onsubmit="saveDocument(event)">
+                <input type="hidden" id="doc-type">
+                <input type="hidden" id="doc-id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold mb-2">Numer Dokumentu</label>
+                        <input type="text" id="doc-number" class="form-control bg-gray-100 text-sm md:text-base" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold mb-2">Data Dokumentu *</label>
+                        <input type="date" id="doc-date" class="form-control text-sm md:text-base" required>
+                    </div>
+                    
+                    <div id="field-supplier" class="hidden">
+                        <label class="block text-xs md:text-sm font-bold mb-2">Dostawca *</label>
+                        <input type="text" id="doc-supplier" class="form-control text-sm md:text-base" placeholder="Nazwa dostawcy">
+                    </div>
+                    
+                    <div id="field-recipient" class="hidden">
+                        <label class="block text-xs md:text-sm font-bold mb-2">Odbiorca (Elektrownia) *</label>
+                        <select id="doc-recipient" class="form-control text-sm md:text-base">
+                            <option value="">-- Wybierz elektrownię --</option>
+                            <option value="Elektrownia Trutnov">Elektrownia Trutnov</option>
+                            <option value="Fortum Częstochowa">Fortum Częstochowa</option>
+                            <option value="Elektrociepłownia Chorzów">Elektrociepłownia Chorzów</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold mb-2">Pojazd *</label>
+                        <select id="doc-vehicle" class="form-control text-sm md:text-base" required>
+                            <option value="">-- Wybierz pojazd --</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs md:text-sm font-bold mb-2">Objętość (mp) *</label>
+                        <input type="number" step="0.01" id="doc-volume" class="form-control text-sm md:text-base" required placeholder="0.00">
+                    </div>
+                    
+                    <div>
+                        <label id="label-person" class="block text-xs md:text-sm font-bold mb-2">Przyjął *</label>
+                        <input type="text" id="doc-person" class="form-control text-sm md:text-base" required placeholder="Imię i nazwisko">
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-xs md:text-sm font-bold mb-2">Uwagi</label>
+                        <textarea id="doc-notes" class="form-control text-sm md:text-base" rows="3" placeholder="Dodatkowe informacje (opcjonalnie)"></textarea>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col md:flex-row justify-end gap-3">
+                    <button type="button" onclick="closeModal('modal-document')" class="px-4 md:px-6 py-2 md:py-3 bg-gray-300 hover:bg-gray-400 rounded-lg font-semibold transition text-sm md:text-base">
+                        Anuluj
+                    </button>
+                    <button type="submit" class="btn btn-success text-sm md:text-base">
+                        💾 Zapisz i Generuj Dokument
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: PODGLĄD DOKUMENTU -->
+    <div id="modal-preview" class="modal">
+        <div class="modal-content max-w-5xl">
+            <div class="flex justify-between items-center mb-6 no-print">
+                <h2 class="text-2xl font-bold">Podgląd Dokumentu</h2>
+                <button onclick="closeModal('modal-preview')" class="text-4xl text-gray-500 hover:text-gray-700 leading-none">&times;</button>
+            </div>
+            <div id="printArea"></div>
+            <div class="flex flex-col md:flex-row justify-end gap-3 mt-6 no-print">
+                <button onclick="closeModal('modal-preview')" class="px-4 md:px-6 py-2 md:py-3 bg-gray-300 hover:bg-gray-400 rounded-lg font-semibold transition text-sm md:text-base order-last md:order-first">
+                    Zamknij
+                </button>
+                <button onclick="printDocument()" class="btn btn-info text-sm md:text-base">
+                    🖨️ Drukuj
+                </button>
+                <button onclick="downloadPDF()" class="btn btn-danger text-sm md:text-base">
+                    📄 Pobierz PDF
+                </button>
+                <button onclick="sendEmail()" class="btn btn-success text-sm md:text-base">
+                    📧 Wyślij Email
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ===== DANE GLOBALNE =====
+let documents = JSON.parse(localStorage.getItem('erp_documents_v2') || '[]');
+let vehicles = JSON.parse(localStorage.getItem('erp_vehicles_v2') || '[]');
+let users = JSON.parse(localStorage.getItem('erp_users') || '[{"username":"Admin","password":"1234","role":"admin","createdAt":"2026-01-01"}]');
+let currentDocument = null;
+let currentUser = null;
+
+const POWERPLANTS = {
+    'trutnov': 'Elektrownia Trutnov',
+    'czestochowa': 'Fortum Częstochowa',
+    'chorzow': 'Elektrociepłownia Chorzów'
+};
+
+// ===== INICJALIZACJA =====
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('ResInvest ERP System initialized');
+    updateTime();
+    setInterval(updateTime, 1000);
+    document.getElementById('doc-date').value = new Date().toISOString().split('T')[0];
+    updateDashboard();
+    renderDocuments();
+    renderWarehouse();
+    renderPowerplants();
+    renderVehicles();
+});
+
+// ===== FUNKCJE POMOCNICZE =====
+function updateTime() {
+    const now = new Date();
+    const timeEl = document.getElementById('current-time');
+    if (timeEl) {
+        timeEl.textContent = now.toLocaleString('pl-PL');
+    }
+}
+
+function saveData() {
+    localStorage.setItem('erp_documents_v2', JSON.stringify(documents));
+    localStorage.setItem('erp_vehicles_v2', JSON.stringify(vehicles));
+    updateDashboard();
+    renderDocuments();
+    renderWarehouse();
+    renderPowerplants();
+}
+
+function showToast(message, type = 'success') {
+    alert(message); // Uproszczone powiadomienie
+}
+
+// ===== NAWIGACJA SEKCJI =====
+window.showSection = function(sectionName) {
+    // Ukryj wszystkie sekcje
+    document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // Pokaż wybraną sekcję
+    const section = document.getElementById('section-' + sectionName);
+    if (section) {
+        section.classList.add('active');
+    }
+    
+    // Aktualizuj zakładki
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    const activeTab = document.querySelector(`[data-section="${sectionName}"]`);
+    if (activeTab) {
+        activeTab.classList.add('active');
+    }
+    
+    // Odśwież dane dla sekcji
+    switch(sectionName) {
+        case 'dashboard':
+            updateDashboard();
+            break;
+        case 'documents':
+            renderDocuments();
+            break;
+        case 'warehouse':
+            renderWarehouse();
+            break;
+        case 'powerplants':
+            renderPowerplants();
+            break;
+        case 'vehicles':
+            renderVehicles();
+            break;
+        case 'users':
+            renderUsers();
+            break;
+    }
+}
+
+// ===== NAWIGACJA ELEKTROCIEPŁOWNI =====
+window.showPowerplant = function(plantId) {
+    document.querySelectorAll('.plant-content').forEach(content => {
+        content.classList.add('hidden');
+        content.classList.remove('active');
+    });
+    
+    const content = document.getElementById('plant-' + plantId);
+    if (content) {
+        content.classList.remove('hidden');
+        content.classList.add('active');
+    }
+    
+    document.querySelectorAll('.tab-elektrownie button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    const activeBtn = document.querySelector(`[data-plant="${plantId}"]`);
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+    }
+}
+
+// ===== PANEL GŁÓWNY =====
+function updateDashboard() {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    let totalPZ = 0, totalWZ = 0, monthPZ = 0, monthWZ = 0, monthDocs = 0;
+    
+    documents.forEach(doc => {
+        const docDate = new Date(doc.date);
+        const volume = parseFloat(doc.volume) || 0;
+        
+        if (doc.type === 'PZ') {
+            totalPZ += volume;
+            if (docDate.getMonth() === currentMonth && docDate.getFullYear() === currentYear) {
+                monthPZ += volume;
+                monthDocs++;
+            }
+        } else {
+            totalWZ += volume;
+            if (docDate.getMonth() === currentMonth && docDate.getFullYear() === currentYear) {
+                monthWZ += volume;
+                monthDocs++;
+            }
+        }
+    });
+    
+    const currentStock = totalPZ - totalWZ;
+    
+    document.getElementById('dash-stock').textContent = currentStock.toFixed(2) + ' mp';
+    document.getElementById('dash-pz').textContent = monthPZ.toFixed(2) + ' mp';
+    document.getElementById('dash-wz').textContent = monthWZ.toFixed(2) + ' mp';
+    document.getElementById('dash-docs').textContent = monthDocs;
+    
+    // Ostatnie dokumenty
+    const recent = documents.slice(-5).reverse();
+    const recentEl = document.getElementById('recent-documents');
+    
+    if (recent.length === 0) {
+        recentEl.innerHTML = '<p class="text-gray-500 italic text-center py-8">Brak dokumentów</p>';
+        return;
+    }
+    
+    recentEl.innerHTML = recent.map(doc => `
+        <div class="flex justify-between items-center p-4 bg-white rounded-lg mb-3 border-2 border-gray-200 hover:border-purple-400 transition cursor-pointer" onclick="viewDocument('${doc.id}')">
+            <div class="flex items-center gap-4">
+                <div class="text-3xl">${doc.type === 'PZ' ? '📥' : '📤'}</div>
+                <div>
+                    <div class="font-bold">${doc.number}</div>
+                    <div class="text-sm text-gray-600">${new Date(doc.date).toLocaleDateString('pl-PL')}</div>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-xl font-bold text-purple-600">${parseFloat(doc.volume).toFixed(2)} mp</div>
+                <div class="text-sm text-gray-600">${doc.type === 'PZ' ? doc.supplier : doc.recipient}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ===== MAGAZYN =====
+function renderWarehouse() {
+    let totalPZ = 0, totalWZ = 0;
+    
+    documents.forEach(doc => {
+        const volume = parseFloat(doc.volume) || 0;
+        if (doc.type === 'PZ') totalPZ += volume;
+        else totalWZ += volume;
+    });
+    
+    const currentStock = totalPZ - totalWZ;
+    
+    document.getElementById('warehouse-current').textContent = currentStock.toFixed(2) + ' mp';
+    document.getElementById('warehouse-pz').textContent = totalPZ.toFixed(2) + ' mp';
+    document.getElementById('warehouse-wz').textContent = totalWZ.toFixed(2) + ' mp';
+}
+
+// ===== ELEKTROCIEPŁOWNIE =====
+function renderPowerplants() {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    Object.keys(POWERPLANTS).forEach(plantId => {
+        const plantName = POWERPLANTS[plantId];
+        const plantDocs = documents.filter(d => d.type === 'WZ' && d.recipient === plantName);
+        
+        let total = 0, monthTotal = 0;
+        plantDocs.forEach(doc => {
+            const volume = parseFloat(doc.volume) || 0;
+            total += volume;
+            
+            const docDate = new Date(doc.date);
+            if (docDate.getMonth() === currentMonth && docDate.getFullYear() === currentYear) {
+                monthTotal += volume;
+            }
+        });
+        
+        document.getElementById(plantId + '-total').textContent = total.toFixed(2) + ' mp';
+        document.getElementById(plantId + '-count').textContent = plantDocs.length;
+        document.getElementById(plantId + '-month').textContent = monthTotal.toFixed(2) + ' mp';
+        
+        // Lista dokumentów
+        const listEl = document.getElementById(plantId + '-list');
+        if (plantDocs.length === 0) {
+            listEl.innerHTML = '<p class="text-gray-500 italic text-center py-8">Brak wydań do tej elektrowni</p>';
+        } else {
+            listEl.innerHTML = `
+                <table class="w-full">
+                    <thead>
+                        <tr>
+                            <th class="p-3 text-left">Data</th>
+                            <th class="p-3 text-left">Numer WZ</th>
+                            <th class="p-3 text-left">Pojazd</th>
+                            <th class="p-3 text-right">Objętość (mp)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${plantDocs.sort((a,b) => new Date(b.date) - new Date(a.date)).map(doc => `
+                            <tr class="cursor-pointer hover:bg-purple-50" onclick="viewDocument('${doc.id}')">
+                                <td class="p-3">${new Date(doc.date).toLocaleDateString('pl-PL')}</td>
+                                <td class="p-3 font-bold">${doc.number}</td>
+                                <td class="p-3">${doc.vehicle}</td>
+                                <td class="p-3 text-right font-bold text-green-600">${parseFloat(doc.volume).toFixed(2)} mp</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+    });
+}
+
+// ===== DOKUMENTY =====
+window.newDocument = function(type) {
+    document.getElementById('form-document').reset();
+    document.getElementById('doc-id').value = '';
+    document.getElementById('doc-type').value = type;
+    
+    // Generuj numer
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const count = documents.filter(d => d.type === type && d.number.includes(`${type}/${year}/${month}`)).length + 1;
+    const number = `${type}/${year}/${month}/${String(count).padStart(4, '0')}`;
+    document.getElementById('doc-number').value = number;
+    
+    // Pokaż odpowiednie pola
+    document.getElementById('modal-title').textContent = type === 'PZ' ? '📥 Nowy Dokument PZ (Przyjęcie)' : '📤 Nowy Dokument WZ (Wydanie)';
+    
+    // Zmień etykietę pola osoby
+    const personLabel = document.getElementById('label-person');
+    if (personLabel) {
+        personLabel.textContent = type === 'PZ' ? 'Przyjął *' : 'Wydał *';
+    }
+    
+    if (type === 'PZ') {
+        document.getElementById('field-supplier').classList.remove('hidden');
+        document.getElementById('field-recipient').classList.add('hidden');
+    } else {
+        document.getElementById('field-supplier').classList.add('hidden');
+        document.getElementById('field-recipient').classList.remove('hidden');
+    }
+    
+    // Załaduj pojazdy
+    const vehicleSelect = document.getElementById('doc-vehicle');
+    vehicleSelect.innerHTML = '<option value="">-- Wybierz pojazd --</option>' +
+        vehicles.map(v => `<option value="${v.registration}">${v.registration}</option>`).join('');
+    
+    document.getElementById('doc-date').value = new Date().toISOString().split('T')[0];
+    openModal('modal-document');
+}
+
+window.saveDocument = function(event) {
+    event.preventDefault();
+    
+    const type = document.getElementById('doc-type').value;
+    const volume = parseFloat(document.getElementById('doc-volume').value);
+    
+    if (!volume || volume <= 0) {
+        showToast('Podaj prawidłową objętość!', 'error');
+        return;
+    }
+    
+    const doc = {
+        id: document.getElementById('doc-id').value || Date.now().toString(),
+        type: type,
+        number: document.getElementById('doc-number').value,
+        date: document.getElementById('doc-date').value,
+        supplier: type === 'PZ' ? document.getElementById('doc-supplier').value : '',
+        recipient: type === 'WZ' ? document.getElementById('doc-recipient').value : '',
+        vehicle: document.getElementById('doc-vehicle').value,
+        volume: volume,
+        person: document.getElementById('doc-person').value,
+        notes: document.getElementById('doc-notes').value,
+        createdAt: new Date().toISOString()
+    };
+    
+    const existingIndex = documents.findIndex(d => d.id === doc.id);
+    if (existingIndex >= 0) {
+        documents[existingIndex] = doc;
+    } else {
+        documents.push(doc);
+    }
+    
+    saveData();
+    closeModal('modal-document');
+    showToast('Dokument zapisany pomyślnie!');
+    
+    // Generuj podgląd
+    currentDocument = doc;
+    generatePreview(doc);
+}
+
+window.viewDocument = function(id) {
+    const doc = documents.find(d => d.id === id);
+    if (doc) {
+        currentDocument = doc;
+        generatePreview(doc);
+    }
+}
+
+window.editDocument = function(id) {
+    const doc = documents.find(d => d.id === id);
+    if (!doc) return;
+    
+    // Wypełnij formularz danymi dokumentu
+    document.getElementById('doc-id').value = doc.id;
+    document.getElementById('doc-type').value = doc.type;
+    document.getElementById('doc-number').value = doc.number;
+    document.getElementById('doc-date').value = doc.date;
+    document.getElementById('doc-supplier').value = doc.supplier || '';
+    document.getElementById('doc-recipient').value = doc.recipient || '';
+    document.getElementById('doc-volume').value = doc.volume;
+    document.getElementById('doc-person').value = doc.person;
+    document.getElementById('doc-notes').value = doc.notes || '';
+    
+    // Ustaw tytuł i pola
+    document.getElementById('modal-title').textContent = doc.type === 'PZ' ? '✏️ Edytuj Dokument PZ' : '✏️ Edytuj Dokument WZ';
+    
+    const personLabel = document.getElementById('label-person');
+    if (personLabel) {
+        personLabel.textContent = doc.type === 'PZ' ? 'Przyjął *' : 'Wydał *';
+    }
+    
+    if (doc.type === 'PZ') {
+        document.getElementById('field-supplier').classList.remove('hidden');
+        document.getElementById('field-recipient').classList.add('hidden');
+    } else {
+        document.getElementById('field-supplier').classList.add('hidden');
+        document.getElementById('field-recipient').classList.remove('hidden');
+    }
+    
+    // Załaduj pojazdy
+    const vehicleSelect = document.getElementById('doc-vehicle');
+    vehicleSelect.innerHTML = '<option value="">-- Wybierz pojazd --</option>' +
+        vehicles.map(v => `<option value="${v.registration}" ${v.registration === doc.vehicle ? 'selected' : ''}>${v.registration}</option>`).join('');
+    
+    openModal('modal-document');
+}
+
+window.deleteDocument = function(id) {
+    if (!confirm('Czy na pewno chcesz usunąć ten dokument? Tej operacji nie można cofnąć!')) return;
+    
+    documents = documents.filter(d => d.id !== id);
+    saveData();
+    showToast('Dokument usunięty!', 'error');
+}
+
+function generatePreview(doc) {
+    const html = `
+        <div class="doc-preview">
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:30px; padding-bottom:20px; border-bottom:3px solid #667eea;">
+                <div>
+                    <h1 style="font-size:32px; font-weight:bold; color:#667eea; margin:0;">Dokument ${doc.type}</h1>
+                    <p style="margin:5px 0 0; color:#666;">${doc.type === 'PZ' ? 'Przyjęcie Zewnętrzne' : 'Wydanie Zewnętrzne'}</p>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:18px; font-weight:bold;">Nr: ${doc.number}</div>
+                    <div style="color:#666;">Data: ${new Date(doc.date).toLocaleDateString('pl-PL')}</div>
+                </div>
+            </div>
+
+            <div style="margin-bottom:30px;">
+                <h3 style="font-size:12px; font-weight:bold; color:#666; margin-bottom:10px; text-transform:uppercase;">ResInvest Commodities</h3>
+                <p style="margin:0;">ul. Wiejska 26a, 44-120 Pyskowice</p>
+                <p style="margin:0;">Tel: 661 710 380 | Email: magazyn@resinvest.pl</p>
+            </div>
+
+            <div style="margin-bottom:30px;">
+                <h3 style="font-size:12px; font-weight:bold; color:#666; margin-bottom:10px; text-transform:uppercase;">${doc.type === 'PZ' ? 'Dostawca' : 'Odbiorca'}</h3>
+                <p style="font-size:16px; font-weight:bold; margin:0;">${doc.type === 'PZ' ? doc.supplier : doc.recipient}</p>
+            </div>
+
+            <table style="width:100%; border-collapse:collapse; margin:30px 0;">
+                <thead>
+                    <tr style="background:#f3f4f6;">
+                        <th style="border:2px solid #111827; padding:12px; text-align:left;">Lp.</th>
+                        <th style="border:2px solid #111827; padding:12px; text-align:left;">Nazwa towaru</th>
+                        <th style="border:2px solid #111827; padding:12px; text-align:left;">Pojazd</th>
+                        <th style="border:2px solid #111827; padding:12px; text-align:right;">Ilość (mp)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="border:2px solid #111827; padding:12px;">1</td>
+                        <td style="border:2px solid #111827; padding:12px;">Zrębka drzewna</td>
+                        <td style="border:2px solid #111827; padding:12px;">${doc.vehicle}</td>
+                        <td style="border:2px solid #111827; padding:12px; text-align:right; font-weight:bold;">${parseFloat(doc.volume).toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" style="border:2px solid #111827; padding:12px; text-align:right; font-weight:bold;">RAZEM:</td>
+                        <td style="border:2px solid #111827; padding:12px; text-align:right; font-weight:bold; background:#f3f4f6;">${parseFloat(doc.volume).toFixed(2)} mp</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            ${doc.notes ? `<div style="margin:30px 0;"><strong>Uwagi:</strong> ${doc.notes}</div>` : ''}
+
+            <div style="display:flex; justify-content:space-between; margin-top:60px;">
+                <div style="text-align:center; width:45%;">
+                    <div style="border-top:2px solid #111827; padding-top:10px; margin-top:60px;">
+                        <strong>Wystawił</strong><br>${doc.person}
+                    </div>
+                </div>
+                <div style="text-align:center; width:45%;">
+                    <div style="border-top:2px solid #111827; padding-top:10px; margin-top:60px;">
+                        <strong>${doc.type === 'PZ' ? 'Przyjął' : 'Wydał'}</strong><br>....................................
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:40px; text-align:center; color:#666; font-size:12px; border-top:2px solid #e5e7eb; padding-top:20px;">
+                Dokument wygenerowany przez ResInvest ERP System<br>Data wydruku: ${new Date().toLocaleString('pl-PL')}
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('printArea').innerHTML = html;
+    openModal('modal-preview');
+}
+
+function renderDocuments() {
+    const tableEl = document.getElementById('documents-table');
+    if (!tableEl) return;
+    
+    if (documents.length === 0) {
+        tableEl.innerHTML = '<p class="text-gray-500 italic text-center py-8">Brak dokumentów</p>';
+        return;
+    }
+    
+    tableEl.innerHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Numer</th>
+                    <th>Typ</th>
+                    <th>Data</th>
+                    <th>Kontrahent</th>
+                    <th>Pojazd</th>
+                    <th style="text-align:right;">Objętość (mp)</th>
+                    <th style="text-align:center;">Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${documents.map(doc => `
+                    <tr>
+                        <td class="font-bold">${doc.number}</td>
+                        <td><span class="badge ${doc.type === 'PZ' ? 'badge-success' : 'badge-danger'}">${doc.type}</span></td>
+                        <td>${new Date(doc.date).toLocaleDateString('pl-PL')}</td>
+                        <td>${doc.type === 'PZ' ? doc.supplier : doc.recipient}</td>
+                        <td>${doc.vehicle}</td>
+                        <td style="text-align:right;" class="font-bold">${parseFloat(doc.volume).toFixed(2)} mp</td>
+                        <td style="text-align:center;">
+                            <button onclick="viewDocument('${doc.id}')" class="text-blue-600 hover:underline font-semibold mr-2">Podgląd</button>
+                            <button onclick="editDocument('${doc.id}')" class="text-green-600 hover:underline font-semibold mr-2">Edytuj</button>
+                            <button onclick="deleteDocument('${doc.id}')" class="text-red-600 hover:underline font-semibold">Usuń</button>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+window.filterDocuments = function() {
+    // Implementacja filtrowania - uproszczona
+    renderDocuments();
+}
+
+// ===== POJAZDY =====
+window.addVehicle = function() {
+    const registration = prompt('Podaj numer rejestracyjny pojazdu:');
+    if (!registration) return;
+    
+    const vehicle = {
+        id: Date.now().toString(),
+        registration: registration.toUpperCase(),
+        createdAt: new Date().toISOString()
+    };
+    
+    vehicles.push(vehicle);
+    saveData();
+    renderVehicles();
+    showToast('Pojazd dodany pomyślnie!');
+}
+
+window.deleteVehicle = function(id) {
+    if (!confirm('Czy na pewno chcesz usunąć ten pojazd?')) return;
+    
+    vehicles = vehicles.filter(v => v.id !== id);
+    saveData();
+    renderVehicles();
+    showToast('Pojazd usunięty!', 'error');
+}
+
+function renderVehicles() {
+    const listEl = document.getElementById('vehicles-list');
+    if (!listEl) return;
+    
+    if (vehicles.length === 0) {
+        listEl.innerHTML = '<p class="col-span-3 text-gray-500 italic text-center py-8">Brak pojazdów. Dodaj pierwszy pojazd.</p>';
+        return;
+    }
+    
+    listEl.innerHTML = vehicles.map(vehicle => {
+        const usageCount = documents.filter(d => d.vehicle === vehicle.registration).length;
+        const usageVolume = documents
+            .filter(d => d.vehicle === vehicle.registration)
+            .reduce((sum, d) => sum + (parseFloat(d.volume) || 0), 0);
+        
+        return `
+            <div class="p-6 bg-white rounded-xl border-2 border-blue-300 hover:border-blue-500 transition">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="text-2xl font-bold">${vehicle.registration}</div>
+                    <button onclick="deleteVehicle('${vehicle.id}')" class="text-red-500 hover:text-red-700 text-xl">🗑️</button>
+                </div>
+                <div class="text-sm text-gray-600">
+                    <div>Operacji: <span class="font-bold">${usageCount}</span></div>
+                    <div>Łącznie: <span class="font-bold">${usageVolume.toFixed(2)} mp</span></div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// ===== UŻYTKOWNICY =====
+window.addUser = function() {
+    if (currentUser?.role !== 'admin') {
+        showToast('Tylko administrator może dodawać użytkowników!', 'error');
+        return;
+    }
+    
+    const username = prompt('Podaj login nowego użytkownika:');
+    if (!username) return;
+    
+    if (users.find(u => u.username === username)) {
+        showToast('Użytkownik o tym loginie już istnieje!', 'error');
+        return;
+    }
+    
+    const password = prompt('Podaj hasło dla użytkownika:');
+    if (!password) return;
+    
+    const user = {
+        username: username,
+        password: password,
+        role: 'user',
+        createdAt: new Date().toISOString()
+    };
+    
+    users.push(user);
+    localStorage.setItem('erp_users', JSON.stringify(users));
+    renderUsers();
+    showToast('Użytkownik dodany pomyślnie!');
+}
+
+window.deleteUser = function(username) {
+    if (currentUser?.role !== 'admin') {
+        showToast('Tylko administrator może usuwać użytkowników!', 'error');
+        return;
+    }
+    
+    if (username === 'Admin') {
+        showToast('Nie można usunąć konta administratora!', 'error');
+        return;
+    }
+    
+    if (!confirm(`Czy na pewno chcesz usunąć użytkownika ${username}?`)) return;
+    
+    users = users.filter(u => u.username !== username);
+    localStorage.setItem('erp_users', JSON.stringify(users));
+    renderUsers();
+    showToast('Użytkownik usunięty!', 'error');
+}
+
+function renderUsers() {
+    const listEl = document.getElementById('users-list');
+    if (!listEl) return;
+    
+    console.log('renderUsers - currentUser:', currentUser);
+    
+    if (!currentUser) {
+        listEl.innerHTML = '<p class="text-gray-500 text-center py-8">Musisz być zalogowany aby zobaczyć tę sekcję.</p>';
+        return;
+    }
+    
+    if (currentUser.role !== 'admin') {
+        listEl.innerHTML = '<p class="text-orange-600 text-center py-8 font-bold">⚠️ Tylko administrator ma dostęp do zarządzania użytkownikami.</p>';
+        return;
+    }
+    
+    listEl.innerHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Login</th>
+                    <th>Rola</th>
+                    <th>Data utworzenia</th>
+                    <th style="text-align:center;">Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${users.map(user => `
+                    <tr>
+                        <td class="font-bold">${user.username}</td>
+                        <td><span class="badge ${user.role === 'admin' ? 'badge-danger' : 'badge-success'}">${user.role === 'admin' ? 'Administrator' : 'Użytkownik'}</span></td>
+                        <td>${new Date(user.createdAt).toLocaleDateString('pl-PL')}</td>
+                        <td style="text-align:center;">
+                            ${user.username !== 'Admin' ? `<button onclick="deleteUser('${user.username}')" class="text-red-600 hover:underline font-semibold">Usuń</button>` : '<span class="text-gray-400">—</span>'}
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+// ===== RAPORTY =====
+window.generateReport = function() {
+    generateMonthlyReport();
+}
+
+window.generateMonthlyReport = function() {
+    const now = new Date();
+    const month = now.toLocaleDateString('pl-PL', {month: 'long', year: 'numeric'});
+    
+    const wb = XLSX.utils.book_new();
+    const data = [
+        ['Raport Miesięczny - Magazyn Pyskowice'],
+        [`Okres: ${month}`],
+        [],
+        ['Numer', 'Typ', 'Data', 'Kontrahent', 'Pojazd', 'Objętość (mp)', 'Wystawił']
+    ];
+    
+    documents.forEach(doc => {
+        data.push([
+            doc.number,
+            doc.type,
+            new Date(doc.date).toLocaleDateString('pl-PL'),
+            doc.type === 'PZ' ? doc.supplier : doc.recipient,
+            doc.vehicle,
+            parseFloat(doc.volume).toFixed(2),
+            doc.person
+        ]);
+    });
+    
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Raport');
+    XLSX.writeFile(wb, `Raport_Magazyn_${month.replace(' ', '_')}.xlsx`);
+    
+    showToast('Raport wygenerowany i pobrany!');
+}
+
+window.generatePowerplantsReport = function() {
+    const wb = XLSX.utils.book_new();
+    const data = [
+        ['Raport Wydań do Elektrociepłowni'],
+        ['ResInvest Commodities - Magazyn Pyskowice'],
+        [],
+        ['Elektrownia', 'Łączna objętość (mp)', 'Liczba dokumentów WZ']
+    ];
+    
+    Object.values(POWERPLANTS).forEach(plantName => {
+        const plantDocs = documents.filter(d => d.type === 'WZ' && d.recipient === plantName);
+        const total = plantDocs.reduce((sum, d) => sum + (parseFloat(d.volume) || 0), 0);
+        data.push([plantName, total.toFixed(2), plantDocs.length]);
+    });
+    
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Elektrownie');
+    XLSX.writeFile(wb, 'Raport_Elektrownie.xlsx');
+    
+    showToast('Raport elektrociepłowni wygenerowany!');
+}
+
+window.generateWarehouseReport = function() {
+    const totalPZ = documents.filter(d => d.type === 'PZ').reduce((sum, d) => sum + (parseFloat(d.volume) || 0), 0);
+    const totalWZ = documents.filter(d => d.type === 'WZ').reduce((sum, d) => sum + (parseFloat(d.volume) || 0), 0);
+    const currentStock = totalPZ - totalWZ;
+    
+    const wb = XLSX.utils.book_new();
+    const data = [
+        ['Raport Stanu Magazynu'],
+        ['ResInvest Commodities - Pyskowice'],
+        [],
+        ['Aktualny stan', currentStock.toFixed(2) + ' mp'],
+        ['Suma przyjęć (PZ)', totalPZ.toFixed(2) + ' mp'],
+        ['Suma wydań (WZ)', totalWZ.toFixed(2) + ' mp'],
+        []
+    ];
+    
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Stan');
+    XLSX.writeFile(wb, 'Raport_Stan_Magazynu.xlsx');
+    
+    showToast('Raport stanu magazynu wygenerowany!');
+}
+
+window.generateVehiclesReport = function() {
+    const wb = XLSX.utils.book_new();
+    const data = [
+        ['Raport Wykorzystania Pojazdów'],
+        [],
+        ['Numer rejestracyjny', 'Liczba operacji', 'Łączna objętość (mp)']
+    ];
+    
+    vehicles.forEach(vehicle => {
+        const usageCount = documents.filter(d => d.vehicle === vehicle.registration).length;
+        const usageVolume = documents
+            .filter(d => d.vehicle === vehicle.registration)
+            .reduce((sum, d) => sum + (parseFloat(d.volume) || 0), 0);
+        data.push([vehicle.registration, usageCount, usageVolume.toFixed(2)]);
+    });
+    
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Pojazdy');
+    XLSX.writeFile(wb, 'Raport_Pojazdy.xlsx');
+    
+    showToast('Raport pojazdów wygenerowany!');
+}
+
+// Raporty PDF
+window.generateMonthlyReportPDF = function() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    const now = new Date();
+    const month = now.toLocaleDateString('pl-PL', {month: 'long', year: 'numeric'});
+    
+    let yPos = 20;
+    doc.setFontSize(16);
+    doc.text('Raport Miesięczny - Magazyn Pyskowice', 15, yPos);
+    yPos += 10;
+    doc.setFontSize(12);
+    doc.text(`Okres: ${month}`, 15, yPos);
+    yPos += 15;
+    
+    doc.setFontSize(10);
+    documents.forEach((d, index) => {
+        if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+        }
+        const line = `${d.number} | ${d.type} | ${new Date(d.date).toLocaleDateString('pl-PL')} | ${d.type === 'PZ' ? d.supplier : d.recipient} | ${parseFloat(d.volume).toFixed(2)} mp`;
+        doc.text(line, 15, yPos);
+        yPos += 7;
+    });
+    
+    doc.save(`Raport_Magazyn_${month.replace(' ', '_')}.pdf`);
+    showToast('Raport PDF wygenerowany!');
+}
+
+window.generatePowerplantsReportPDF = function() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    let yPos = 20;
+    doc.setFontSize(16);
+    doc.text('Raport Wydań do Elektrociepłowni', 15, yPos);
+    yPos += 10;
+    doc.setFontSize(12);
+    doc.text('ResInvest Commodities - Magazyn Pyskowice', 15, yPos);
+    yPos += 15;
+    
+    doc.setFontSize(10);
+    Object.values(POWERPLANTS).forEach(plantName => {
+        const plantDocs = documents.filter(d => d.type === 'WZ' && d.recipient === plantName);
+        const total = plantDocs.reduce((sum, d) => sum + (parseFloat(d.volume) || 0), 0);
+        doc.text(`${plantName}: ${total.toFixed(2)} mp (${plantDocs.length} dokumentów)`, 15, yPos);
+        yPos += 10;
+    });
+    
+    doc.save('Raport_Elektrownie.pdf');
+    showToast('Raport PDF wygenerowany!');
+}
+
+window.generateWarehouseReportPDF = function() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    const totalPZ = documents.filter(d => d.type === 'PZ').reduce((sum, d) => sum + (parseFloat(d.volume) || 0), 0);
+    const totalWZ = documents.filter(d => d.type === 'WZ').reduce((sum, d) => sum + (parseFloat(d.volume) || 0), 0);
+    const currentStock = totalPZ - totalWZ;
+    
+    let yPos = 20;
+    doc.setFontSize(16);
+    doc.text('Raport Stanu Magazynu', 15, yPos);
+    yPos += 10;
+    doc.setFontSize(12);
+    doc.text('ResInvest Commodities - Pyskowice', 15, yPos);
+    yPos += 15;
+    
+    doc.setFontSize(10);
+    doc.text(`Aktualny stan: ${currentStock.toFixed(2)} mp`, 15, yPos);
+    yPos += 10;
+    doc.text(`Suma przyjęć (PZ): ${totalPZ.toFixed(2)} mp`, 15, yPos);
+    yPos += 10;
+    doc.text(`Suma wydań (WZ): ${totalWZ.toFixed(2)} mp`, 15, yPos);
+    
+    doc.save('Raport_Stan_Magazynu.pdf');
+    showToast('Raport PDF wygenerowany!');
+}
+
+window.generateVehiclesReportPDF = function() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    let yPos = 20;
+    doc.setFontSize(16);
+    doc.text('Raport Wykorzystania Pojazdów', 15, yPos);
+    yPos += 15;
+    
+    doc.setFontSize(10);
+    vehicles.forEach(vehicle => {
+        const usageCount = documents.filter(d => d.vehicle === vehicle.registration).length;
+        const usageVolume = documents.filter(d => d.vehicle === vehicle.registration).reduce((sum, d) => sum + (parseFloat(d.volume) || 0), 0);
+        doc.text(`${vehicle.registration}: ${usageCount} operacji, ${usageVolume.toFixed(2)} mp`, 15, yPos);
+        yPos += 10;
+    });
+    
+    doc.save('Raport_Pojazdy.pdf');
+    showToast('Raport PDF wygenerowany!');
+}
+
+window.printMonthlyReport = function() {
+    const now = new Date();
+    const month = now.toLocaleDateString('pl-PL', {month: 'long', year: 'numeric'});
+    
+    let printContent = `
+        <html>
+        <head>
+            <title>Raport Miesięczny</title>
+            <style>
+                body { font-family: Arial; padding: 20px; }
+                h1 { color: #16a34a; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #16a34a; color: white; }
+            </style>
+        </head>
+        <body>
+            <h1>Raport Miesięczny - Magazyn Pyskowice</h1>
+            <p>Okres: ${month}</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Numer</th>
+                        <th>Typ</th>
+                        <th>Data</th>
+                        <th>Kontrahent</th>
+                        <th>Pojazd</th>
+                        <th>Objętość (mp)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${documents.map(d => `
+                        <tr>
+                            <td>${d.number}</td>
+                            <td>${d.type}</td>
+                            <td>${new Date(d.date).toLocaleDateString('pl-PL')}</td>
+                            <td>${d.type === 'PZ' ? d.supplier : d.recipient}</td>
+                            <td>${d.vehicle}</td>
+                            <td>${parseFloat(d.volume).toFixed(2)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </body>
+        </html>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// ===== MODALE =====
+window.openModal = function(id) {
+    document.getElementById(id).classList.add('active');
+}
+
+window.closeModal = function(id) {
+    document.getElementById(id).classList.remove('active');
+}
+
+// ===== DRUKOWANIE I EKSPORT =====
+window.printDocument = function() {
+    window.print();
+}
+
+window.downloadPDF = function() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const content = document.getElementById('printArea').innerText;
+    const lines = doc.splitTextToSize(content, 180);
+    doc.text(lines, 15, 15);
+    doc.save(`${currentDocument.number.replace(/\//g, '-')}.pdf`);
+}
+
+window.sendEmail = function() {
+    const subject = encodeURIComponent(`Dokument ${currentDocument.number}`);
+    const body = encodeURIComponent(`W załączeniu dokument ${currentDocument.type} nr ${currentDocument.number}`);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+}
+
+console.log('✅ ResInvest ERP System ready');
+
+// ===== LOGOWANIE =====
+window.handleLogin = function(event) {
+    event.preventDefault();
+    
+    const username = document.getElementById('login-username').value;
+    const password = document.getElementById('login-password').value;
+    
+    // Sprawdź dane logowania
+    const user = users.find(u => u.username === username && u.password === password);
+    
+    if (user) {
+        // Zalogowano pomyślnie
+        currentUser = user;
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        document.getElementById('login-error').classList.add('hidden');
+        
+        // Zapisz sesję
+        sessionStorage.setItem('erp_logged_in', 'true');
+        sessionStorage.setItem('erp_current_user', JSON.stringify(user));
+        
+        console.log('Zalogowano użytkownika:', user.username, 'Rola:', user.role);
+    } else {
+        // Błędne dane
+        document.getElementById('login-error').classList.remove('hidden');
+        document.getElementById('login-password').value = '';
+    }
+}
+
+// Sprawdź czy użytkownik jest zalogowany przy starcie
+document.addEventListener('DOMContentLoaded', () => {
+    if (sessionStorage.getItem('erp_logged_in') === 'true') {
+        const savedUser = JSON.parse(sessionStorage.getItem('erp_current_user') || '{}');
+        currentUser = savedUser;
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        
+        console.log('Przywrócono sesję:', savedUser.username, 'Rola:', savedUser.role);
+    }
+});
+
+</script>
+
+    </div><!-- Zamknięcie main-app -->
+
+</body>
+</html>
